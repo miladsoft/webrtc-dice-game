@@ -191,9 +191,18 @@ function App() {
         }
       })
 
-      setAnswer(JSON.stringify(newPc.localDescription))
+      const answerString = JSON.stringify(newPc.localDescription)
+      setAnswer(answerString)
       setPc(newPc)
       pcRef.current = newPc
+      
+      // If this is auto-join via URL, try to send answer back automatically
+      if (connectionMode === 'url' && offerData) {
+        console.log('Auto-join detected, answer ready:', answerString)
+        // In a real app, you'd send this through a signaling server
+        // For now, show it to copy manually
+      }
+      
     } catch (err) {
       console.error('Invalid offer format:', err)
     }
@@ -207,6 +216,16 @@ function App() {
       const answerData = JSON.parse(answer)
       await pc.setRemoteDescription(answerData)
       console.log('Connection completed!')
+      
+      // Wait a bit for the connection to establish
+      setTimeout(() => {
+        if (dataChannel && dataChannel.readyState === 'open') {
+          console.log('Data channel is ready!')
+        } else {
+          console.log('Waiting for data channel to open...')
+        }
+      }, 1000)
+      
     } catch (err) {
       console.error('Invalid answer format:', err)
     }
@@ -429,6 +448,16 @@ function App() {
                     {isInitiator && (
                       <div>
                         <Label htmlFor="answer">Waiting for Player 2...</Label>
+                        <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg mb-2">
+                          <p className="text-blue-800 text-sm">
+                            <strong>Next Steps:</strong>
+                          </p>
+                          <ol className="text-blue-700 text-sm mt-1 list-decimal list-inside space-y-1">
+                            <li>Player 2 will join using your link</li>
+                            <li>Their response will appear below</li>
+                            <li>Click "Complete Connection" to start playing</li>
+                          </ol>
+                        </div>
                         <Textarea
                           id="answer"
                           value={answer}
@@ -441,7 +470,7 @@ function App() {
                           disabled={!answer.trim()}
                           className="mt-2 w-full"
                         >
-                          Complete Connection
+                          {answer.trim() ? 'Complete Connection' : 'Waiting for Player 2 Response...'}
                         </Button>
                       </div>
                     )}
@@ -513,6 +542,14 @@ function App() {
 
                 {answer && (
                   <div>
+                    <div className="p-3 bg-green-50 border border-green-200 rounded-lg mb-2">
+                      <p className="text-green-800 text-sm">
+                        <strong>✅ Connected Successfully!</strong>
+                      </p>
+                      <p className="text-green-700 text-sm mt-1">
+                        Send this response to the host to complete the connection:
+                      </p>
+                    </div>
                     <Label htmlFor="answer-output">Your Response (Send this to the host)</Label>
                     <Textarea
                       id="answer-output"
